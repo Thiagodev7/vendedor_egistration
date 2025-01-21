@@ -1,42 +1,43 @@
+// lib/models/vendedor.dart
+
 class Vendedor {
   final String nome;
   final String telefone;
   final String email;
-  final String cpfCnpj;
-  String? linkDeVendas; // O link será gerado após o cadastro
+  final String cpf;
+  final String linkVendas;
+  final int quantidadeVendas;
 
   Vendedor({
     required this.nome,
     required this.telefone,
     required this.email,
-    required this.cpfCnpj,
-    this.linkDeVendas,
+    required this.cpf,
+    required this.linkVendas,
+    required this.quantidadeVendas,
   });
 
-  // Método para converter os dados para um mapa (útil para enviar ao backend)
-  Map<String, dynamic> toMap() {
+  // Método para converter Vendedor para JSON
+  Map<String, dynamic> toJson() {
     return {
       'nome': nome,
       'telefone': telefone,
       'email': email,
-      'cpfCnpj': cpfCnpj,
-      'linkDeVendas': linkDeVendas,
+      'cpf': cpf,
+      'link_vendas': linkVendas,
+      'quantidade_vendas': quantidadeVendas,
     };
   }
 
-  // Método para criar um objeto Vendedor a partir de um mapa (útil para receber do backend)
-  factory Vendedor.fromMap(Map<String, dynamic> map) {
+  // Método para criar um Vendedor a partir de JSON
+  factory Vendedor.fromJson(Map<String, dynamic> json) {
     return Vendedor(
-      nome: map['nome'] ?? '',
-      telefone: map['telefone'] ?? '',
-      email: map['email'] ?? '',
-      cpfCnpj: map['cpfCnpj'] ?? '',
-      linkDeVendas: map['linkDeVendas'],
+      nome: json['nome'],
+      telefone: json['telefone'],
+      email: json['email'],
+      cpf: json['cpf'],
+      linkVendas: json['link_vendas'],
+      quantidadeVendas: json['quantidade_vendas'],
     );
-  }
-
-  @override
-  String toString() {
-    return 'Vendedor(nome: $nome, telefone: $telefone, email: $email, cpfCnpj: $cpfCnpj, linkDeVendas: $linkDeVendas)';
   }
 }

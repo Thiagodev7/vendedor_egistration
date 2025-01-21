@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vendor_registration/modules/home/home_controller.dart';
+import 'package:vendor_registration/shared/utils/colors.dart';
 import 'package:vendor_registration/shared/widgets/backgroun_decoration.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,6 +12,32 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final HomeController _controller = HomeController();
+
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: lilacColor),
+      filled: true,
+      fillColor: offWhiteColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide(color: lilacColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide(color: purpleColor, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide(color: Colors.red, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,26 +102,29 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _controller.nameController,
-                        decoration: const InputDecoration(labelText: "Nome"),
+                        decoration: _inputDecoration("Nome", Icons.person),
                         validator: _controller.validateName,
                       ),
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: _controller.phoneController,
-                        decoration: const InputDecoration(labelText: "Telefone"),
+                        decoration: _inputDecoration("Telefone", Icons.phone),
+                        keyboardType: TextInputType.phone,
                         validator: _controller.validatePhone,
                       ),
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: _controller.emailController,
-                        decoration: const InputDecoration(labelText: "E-mail"),
+                        decoration: _inputDecoration("E-mail", Icons.email),
+                        keyboardType: TextInputType.emailAddress,
                         validator: _controller.validateEmail,
                       ),
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: _controller.cpfCnpjController,
                         decoration:
-                            const InputDecoration(labelText: "CPF ou CNPJ"),
+                            _inputDecoration("CPF ou CNPJ", Icons.credit_card),
+                        keyboardType: TextInputType.number,
                         validator: _controller.validateCpfCnpj,
                       ),
                       const SizedBox(height: 20),
