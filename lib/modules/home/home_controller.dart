@@ -1,10 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para copiar para a área de transferência
 import 'package:vendor_registration/modules/home/home_service.dart';
 import 'package:vendor_registration/modules/vendedor/vendedor_model.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'dart:html' as html;
+
+import 'package:vendor_registration/shared/utils/encrypt.dart';
 
 class HomeController {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -50,7 +51,6 @@ class HomeController {
     return null;
   }
 
-  // Método para submeter o formulário e criar um vendedor
   void submitForm(BuildContext context) async {
     if (formKey.currentState!.validate()) {
       final String name = nameController.text;
@@ -58,10 +58,12 @@ class HomeController {
       final String email = emailController.text;
       final String cpfCnpj = cpfCnpjController.text;
 
-      // Gerar link personalizado
-      final String link = "https://meusite.com/vendedor/$name";
+      final String cpfCnpjEncrypted = EncryptionHelper.encryptCPF(cpfCnpj);
 
-      // Criar o objeto Vendedor
+      final String link = "https://vendasonline.uniodontogoiania.com.br/home/$cpfCnpjEncrypted";
+
+      print("aqui = $cpfCnpjEncrypted");
+
       Vendedor vendedor = Vendedor(
         nome: name,
         telefone: phone,
@@ -71,84 +73,74 @@ class HomeController {
         quantidadeVendas: 0,
       );
 
-      // Chamar o método do serviço para criar o vendedor
-       bool sucesso = await homeService.criarVendedor(vendedor);
-       final qrCodeUrl = await homeService.generateQRCode(link);
-
-      if (sucesso && qrCodeUrl.isNotEmpty) {
-        // Exibir popup com o link gerado e o QR Code
-        _showLinkDialog(context, link, qrCodeUrl);
+      final String createResponse = await homeService.criarVendedor(vendedor);
+      if (createResponse == "success") {
+        final String qrCodeUrl = await homeService.generateQRCode(link);
+        if (qrCodeUrl.isNotEmpty) {
+          _showLinkDialog(context, link, qrCodeUrl);
+        } else {
+          _showErrorDialog(
+              context, "Erro ao gerar o QR Code. Tente novamente.");
+        }
       } else {
-        // Exibir mensagem de erro
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text("Erro ao criar vendedor! Tente novamente mais tarde.")),
-        );
+        _showErrorDialog(context, createResponse);
       }
-
-      // Limpar os campos após o cadastro
-      // nameController.clear();
-      // phoneController.clear();
-      // emailController.clear();
-      // cpfCnpjController.clear();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
             content: Text("Por favor, preencha todos os campos corretamente.")),
       );
     }
   }
 
-  // Função para exibir o popup com o link e o QR Code
   void _showLinkDialog(BuildContext context, String link, String qrCodeUrl) {
-    final String proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-final String proxiedUrl = qrCodeUrl;
-    print(qrCodeUrl);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Link gerado com sucesso!"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(link,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            if (qrCodeUrl.isNotEmpty)
-              // SizedBox(
-              //   width: 150,
-              //   height: 150,
-              //   child: CachedNetworkImage(
-              //     imageUrl: qrCodeUrl,
-              //     placeholder: (context, url) =>
-              //         const CircularProgressIndicator(),
-              //     errorWidget: (context, url, error) => const Icon(Icons.error),
-              //     httpHeaders: {
-              //       "Access-Control-Allow-Origin": "*"
-              //     }, // Adicione, se necessário
-              //   ),
-              // ),
-            Image.network(proxiedUrl),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: link));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content:
-                          Text("Link copiado para a área de transferência!")),
-                );
-              },
-              child: const Text("Copiar Link"),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(link,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              if (qrCodeUrl.isNotEmpty)
+                SizedBox(
+                  width: 200,
+                  child: Image.network(
+                    qrCodeUrl,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: link));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content:
+                            Text("Link copiado para a área de transferência!")),
+                  );
+                },
+                child: const Text("Copiar Link"),
+              ),
+              const SizedBox(height: 10),
+              IconButton(
+                icon: Icon(Icons.print),
+                onPressed: () {
+                  final url = qrCodeUrl; // Substitua pelo link desejado
+                  html.window.open(url, '_blank');
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Fechar o popup
+              Navigator.of(context).pop();
             },
             child: const Text("Fechar"),
           ),
@@ -157,28 +149,21 @@ final String proxiedUrl = qrCodeUrl;
     );
   }
 
-  Future<Uint8List> fetchImage(String url) async {
-  final response = await http.get(Uri.parse(url));
-  if (response.statusCode == 200) {
-    return response.bodyBytes;
-  } else {
-    throw Exception('Erro ao carregar a imagem');
+  void _showErrorDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Erro"),
+        content: Text(errorMessage),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text("Fechar"),
+          ),
+        ],
+      ),
+    );
   }
-}
-
-Widget buildImage(String url) {
-  return FutureBuilder<Uint8List>(
-    future: fetchImage(url),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const CircularProgressIndicator();
-      } else if (snapshot.hasError) {
-        return const Icon(Icons.error);
-      } else {
-        return Image.memory(snapshot.data!);
-      }
-    },
-  );
-}
-
 }
