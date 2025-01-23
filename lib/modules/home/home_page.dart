@@ -122,8 +122,7 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: _controller.cpfCnpjController,
-                        decoration:
-                            _inputDecoration("CPF ou CNPJ", Icons.credit_card),
+                        decoration: _inputDecoration("CPF ou CNPJ", Icons.credit_card),
                         keyboardType: TextInputType.number,
                         validator: _controller.validateCpfCnpj,
                       ),
@@ -133,8 +132,7 @@ class _HomePageState extends State<HomePage> {
                           _controller.submitForm(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 50, vertical: 15),
+                          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),

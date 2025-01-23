@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para copiar para a área de transferência
 import 'package:vendor_registration/modules/home/home_service.dart';
 import 'package:vendor_registration/modules/vendedor/vendedor_model.dart';
-import 'package:http/http.dart' as http;
 import 'dart:html' as html;
 
 import 'package:vendor_registration/shared/utils/encrypt.dart';
@@ -34,8 +33,7 @@ class HomeController {
     if (value == null || value.isEmpty) {
       return "Digite o e-mail";
     }
-    if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-        .hasMatch(value)) {
+    if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(value)) {
       return "E-mail inválido";
     }
     return null;
@@ -52,57 +50,62 @@ class HomeController {
   }
 
   void submitForm(BuildContext context) async {
-  if (formKey.currentState!.validate()) {
-    final String name = nameController.text;
-    final String phone = phoneController.text;
-    final String email = emailController.text;
-    final String cpfCnpj = cpfCnpjController.text;
+    if (formKey.currentState!.validate()) {
+      final String name = nameController.text;
+      final String phone = phoneController.text;
+      final String email = emailController.text;
+      final String cpfCnpj = cpfCnpjController.text;
+      final String cpfCnpjEncrypted = EncryptionHelper.encryptCPF(cpfCnpj);
 
-    // Criptografar o CPF/CNPJ
-    final String cpfCnpjEncrypted = EncryptionHelper.encryptCPF(cpfCnpj);
+      // Gerar o link base
+      final String link = "https://vendasonline.uniodontogoiania.com.br/home/$cpfCnpjEncrypted";
 
-    // Gerar o link base
-    final String link = "https://vendasonline.uniodontogoiania.com.br/home/$cpfCnpjEncrypted";
+      try {
+        // Verificar se o vendedor já existe
+        final existingVendedor = await homeService.getVendedorByCpf(cpfCnpj);
+        if (existingVendedor != null) {
+          // Exibir o link e o QR Code do vendedor existente
+          _showLinkDialog(context, existingVendedor.linkVendas, existingVendedor.linkQrcode);
+          return;
+        }
+        //   // Gerar o QR Code
+          final String qrCodeUrl = await homeService.generateQRCode(link);
+          if (qrCodeUrl.isEmpty) {
+            _showErrorDialog(context, "Erro ao gerar o QR Code. Tente novamente.");
+            return;
+          }
 
-    try {
-      // Gerar o QR Code antes de salvar o vendedor
-      final String qrCodeUrl = await homeService.generateQRCode(link);
+          print("qrcode $qrCodeUrl");
 
-      if (qrCodeUrl.isEmpty) {
-        _showErrorDialog(context, "Erro ao gerar o QR Code. Tente novamente.");
-        return;
+          // Atualizar o vendedor com o QR Code
+          Vendedor vendedor = Vendedor(
+            nome: name,
+            telefone: phone,
+            email: email,
+            cpf: cpfCnpj,
+            linkVendas: link,
+            linkQrcode: qrCodeUrl,
+            quantidadeVendas: 0,
+          );
+
+          // Salvar os dados do vendedor no backend novamente
+          await homeService.criarVendedor(vendedor);
+          _showLinkDialog(context, link, qrCodeUrl);
+        // } else {
+        //   _showErrorDialog(context, createResponse);
+        // }
+      } catch (error) {
+        _showErrorDialog(context, "Erro ao processar: $error");
       }
-
-      // Criar o objeto Vendedor com o link do QR Code
-      Vendedor vendedor = Vendedor(
-        nome: name,
-        telefone: phone,
-        email: email,
-        cpf: cpfCnpj,
-        linkVendas: link,
-        linkQrcode: qrCodeUrl,
-        quantidadeVendas: 0,
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Por favor, preencha todos os campos corretamente."),
+        ),
       );
-
-      // Salvar os dados do vendedor no backend
-      final String createResponse = await homeService.criarVendedor(vendedor);
-
-      if (createResponse == "success") {
-        _showLinkDialog(context, link, qrCodeUrl);
-      } else {
-        _showErrorDialog(context, createResponse);
-      }
-    } catch (error) {
-      _showErrorDialog(context, "Erro ao processar: $error");
     }
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Por favor, preencha todos os campos corretamente."),
-      ),
-    );
   }
-}
+
   void _showLinkDialog(BuildContext context, String link, String qrCodeUrl) {
     showDialog(
       context: context,
@@ -112,9 +115,7 @@ class HomeController {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(link,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(link, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               if (qrCodeUrl.isNotEmpty)
                 SizedBox(
@@ -129,9 +130,7 @@ class HomeController {
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: link));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content:
-                            Text("Link copiado para a área de transferência!")),
+                    const SnackBar(content: Text("Link copiado para a área de transferência!")),
                   );
                 },
                 child: const Text("Copiar Link"),

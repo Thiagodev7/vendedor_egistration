@@ -1,5 +1,3 @@
-// lib/models/vendedor.dart
-
 class Vendedor {
   final String nome;
   final String telefone;
