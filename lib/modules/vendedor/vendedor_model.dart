@@ -6,6 +6,7 @@ class Vendedor {
   final String email;
   final String cpf;
   final String linkVendas;
+  final String linkQrcode;
   final int quantidadeVendas;
 
   Vendedor({
@@ -14,6 +15,7 @@ class Vendedor {
     required this.email,
     required this.cpf,
     required this.linkVendas,
+    required this.linkQrcode,
     required this.quantidadeVendas,
   });
 
@@ -25,6 +27,7 @@ class Vendedor {
       'email': email,
       'cpf': cpf,
       'link_vendas': linkVendas,
+      'link_qrcode': linkQrcode,
       'quantidade_vendas': quantidadeVendas,
     };
   }
@@ -37,6 +40,7 @@ class Vendedor {
       email: json['email'],
       cpf: json['cpf'],
       linkVendas: json['link_vendas'],
+      linkQrcode: json['link_qrcode'],
       quantidadeVendas: json['quantidade_vendas'],
     );
   }

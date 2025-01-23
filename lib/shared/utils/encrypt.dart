@@ -2,7 +2,7 @@ import 'package:encrypt/encrypt.dart' as encrypt;
 
 class EncryptionHelper {
   static final _key = encrypt.Key.fromUtf8('my32lengthsupersecretnooneknows1'); // 32 caracteres
-  static final _iv = encrypt.IV.fromLength(16); // Vetor de inicialização
+  static final _iv = encrypt.IV.fromUtf8('my16bytesiv00001'); // IV fixo de 16 caracteres
 
   static String encryptCPF(String cpf) {
     final encrypter = encrypt.Encrypter(encrypt.AES(_key));
@@ -11,8 +11,11 @@ class EncryptionHelper {
   }
 
   static String decryptCPF(String encryptedCPF) {
-    final encrypter = encrypt.Encrypter(encrypt.AES(_key));
-    final decrypted = encrypter.decrypt64(encryptedCPF, iv: _iv);
-    return decrypted;
+    try {
+      final encrypter = encrypt.Encrypter(encrypt.AES(_key));
+      return encrypter.decrypt64(encryptedCPF, iv: _iv);
+    } catch (e) {
+      throw Exception('Erro na descriptografia: $e');
+    }
   }
 }
